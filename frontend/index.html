@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>PaperHub — AI 논문 검색 & 요약 & 영어학습</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<style>
+:root{--bg:#0a0f1e;--card:#111827;--border:#1e293b;--accent:#f97316;--accent2:#6366f1;--text:#e2e8f0;--muted:#64748b}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes glow{0%,100%{box-shadow:0 0 20px rgba(249,115,22,.12)}50%{box-shadow:0 0 40px rgba(249,115,22,.25)}}
+.hero{background:linear-gradient(135deg,#0a0f1e,#1a1040,#0f172a);padding:40px 20px 30px;text-align:center}
+.hero h1{font-size:32px;font-weight:800;background:linear-gradient(135deg,#f97316,#fbbf24);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.hero .sub{color:var(--muted);font-size:13px;margin:6px 0 20px}
+.hero .sub span{color:#a5b4fc}
+.sbox-wrap{max-width:700px;margin:0 auto;display:flex;gap:8px;background:rgba(17,24,39,.7);border:1px solid #334155;border-radius:14px;padding:6px;animation:glow 4s ease-in-out infinite}
+.sbox-wrap input{flex:1;padding:12px 16px;border:none;background:transparent;color:var(--text);font-size:14px;outline:none}
+.sbox-wrap select{padding:8px;border:none;background:#1e293b;color:var(--text);border-radius:8px;font-size:11px}
+.sbox-wrap button{padding:10px 24px;border:none;background:linear-gradient(135deg,var(--accent),#ea580c);color:#fff;border-radius:10px;font-weight:700;cursor:pointer}
+.trends{display:flex;gap:6px;justify-content:center;margin-top:12px;flex-wrap:wrap}
+.trends button{padding:3px 10px;border-radius:12px;border:1px solid #334155;background:transparent;color:#94a3b8;cursor:pointer;font-size:10px}
+.trends button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.nav{background:var(--card);border-bottom:1px solid var(--border);padding:0 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:50}
+.nav .tabs{display:flex;overflow-x:auto}
+.nav .t{padding:12px 16px;color:var(--muted);font-size:12px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.nav .t:hover,.nav .t.on{color:var(--accent);border-bottom-color:var(--accent)}
+.nav select{padding:5px 8px;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:6px;font-size:11px}
+.main{max-width:1300px;margin:0 auto;padding:16px}
+.cats{display:flex;gap:5px;margin-bottom:14px;flex-wrap:wrap}
+.cats button{padding:5px 12px;border-radius:14px;border:1px solid var(--border);background:transparent;color:#94a3b8;cursor:pointer;font-size:10px}
+.cats button:hover,.cats button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(350px,1fr));gap:12px;animation:fadeUp .4s ease}
+.card{background:var(--card);border-radius:12px;padding:16px;border:1px solid var(--border);transition:all .2s}
+.card:hover{transform:translateY(-2px);border-color:var(--accent)}
+.badge{display:inline-block;padding:2px 7px;border-radius:8px;font-size:9px;font-weight:600;margin-right:2px;margin-bottom:4px}
+.card h3{font-size:14px;margin:6px 0;line-height:1.4;color:#f8fafc}
+.card .meta{font-size:11px;color:var(--muted);margin-bottom:6px}
+.card .abs{font-size:11px;color:#94a3b8;line-height:1.5;margin-bottom:10px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.sumbox{background:rgba(99,102,241,.08);border-radius:8px;padding:12px;margin-bottom:8px;font-size:12px;color:#a5b4fc;border-left:3px solid var(--accent2);line-height:1.7}
+.pgbox{background:rgba(15,23,42,.6);border-radius:10px;padding:14px;margin-bottom:8px;border:1px solid var(--border)}
+.pgbox .t{color:#a5b4fc;font-weight:600;font-size:12px;margin-bottom:8px}
+.pgbox .b{font-size:11px;color:#cbd5e1;line-height:1.7}
+.acts{display:flex;gap:5px;flex-wrap:wrap}
+.acts button,.acts select{padding:5px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:#94a3b8;cursor:pointer;font-size:10px}
+.acts button:hover{background:var(--accent);color:#fff;border-color:var(--accent)}
+.acts button:disabled{opacity:.4;cursor:wait}
+.acts button.bm{background:var(--accent);color:#fff;border-color:var(--accent)}
+.loading{text-align:center;padding:40px;color:var(--muted)}
+.loading::after{content:'';display:block;width:24px;height:24px;margin:12px auto;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite}
+.empty{text-align:center;padding:50px;color:#475569;font-size:13px}
+.ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:100;justify-content:center;align-items:center}
+.ov.show{display:flex}
+.modal{background:var(--card);border-radius:16px;padding:24px;max-width:750px;width:94%;max-height:88vh;overflow-y:auto;border:1px solid var(--border);animation:fadeUp .3s ease}
+.modal h2{color:var(--accent);font-size:17px;margin-bottom:12px;line-height:1.4}
+.modal .x{float:right;background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer}
+.modal p{line-height:1.7;color:#cbd5e1;font-size:12px;margin-bottom:6px}
+.modal hr{border:none;border-top:1px solid var(--border);margin:12px 0}
+.mtabs{display:flex;gap:0;border-bottom:1px solid var(--border);margin-top:14px;overflow-x:auto}
+.mt{padding:8px 14px;color:var(--muted);font-size:11px;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap}
+.mt:hover,.mt.on{color:var(--accent);border-bottom-color:var(--accent)}
+.mbtn{display:inline-block;padding:7px 14px;border-radius:8px;border:none;color:#fff;cursor:pointer;font-size:12px;font-weight:600;transition:transform .15s}
+.mbtn:hover{transform:scale(1.02)}
+.mbtn:disabled{opacity:.4;cursor:wait;transform:none}
+.st{background:var(--card);border-radius:8px;padding:10px 16px;border:1px solid var(--border);text-align:center}
+.st .n{font-size:22px;font-weight:800;color:var(--accent)}
+.st .l{font-size:9px;color:var(--muted);text-transform:uppercase}
+</style>
+</head>
+<body>
+<div class="hero">
+<h1>📄 PaperHub</h1>
+<div class="sub">PubMed · arXiv · OpenAlex — <span>2억+ 논문</span> 실시간 검색 & AI 요약 & 영어학습</div>
+<div class="sbox-wrap">
+<input id="q" placeholder="논문 검색 — CRISPR, transformer, quantum computing...">
+<select id="src"><option value="all">🌐 전체</option><option value="pubmed">🏥 PubMed</option><option value="arxiv">📐 arXiv</option><option value="openalex">🔬 OpenAlex</option></select>
+<button id="go">검색</button>
+</div>
+<div class="trends"><span style="font-size:10px;color:var(--muted)">🔥</span></div>
+</div>
+<div class="nav">
+<div class="tabs" id="navTabs"></div>
+<select id="sort"><option value="relevance">관련도</option><option value="citations">📊 인용수</option><option value="date">🕐 최신</option></select>
+</div>
+<div class="main">
+<div class="cats" id="cats"></div>
+<div id="stats" style="display:none;display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap"></div>
+<div id="out"></div>
+</div>
+<div class="ov" id="ov"><div class="modal" id="md"></div></div>
+
+<script>
+const API='https://m3hkx12he5.execute-api.us-east-1.amazonaws.com/prod';
+let P=[],BM=new Set();
+const $=id=>document.getElementById(id);
+async function GET(p){try{const r=await fetch(API+p);return r.ok?r.json():null}catch(e){return null}}
+async function POST(p,b){try{const r=await fetch(API+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b)});return r.ok?r.json():null}catch(e){return null}}
+
+// Nav tabs
+const TABS=[['papers','📚 논문'],['bookmarks','⭐ 북마크'],['recommend','🤖 추천'],['mypaper','📄 내 논문'],['streak','🔥 스트릭']];
+TABS.forEach(([k,l],i)=>{const d=document.createElement('div');d.className='t'+(i===0?' on':'');d.textContent=l;d.dataset.s=k;d.onclick=()=>{document.querySelectorAll('.t').forEach(x=>x.classList.remove('on'));d.classList.add('on');switchTab(k)};$('navTabs').appendChild(d)});
+
+// Trending
+['Large Language Model','CRISPR','AlphaFold','Quantum Computing','Drug Discovery AI','Climate Change'].forEach(t=>{const b=document.createElement('button');b.textContent=t;b.onclick=()=>{$('q').value=t;doSearch()};document.querySelector('.trends').appendChild(b)});
+
+// Categories
+const CATS=[['','전체'],['machine learning','🤖 ML'],['deep learning','🧠 DL'],['natural language processing','💬 NLP'],['computer vision','👁 CV'],['large language model','📝 LLM'],['genomics','🧬 Genomics'],['cancer research','🔬 Cancer'],['neuroscience','🧠 Neuro'],['quantum computing','⚛️ Quantum'],['climate change','🌍 Climate']];
+CATS.forEach(([v,l],i)=>{const b=document.createElement('button');b.className=i===0?'on':'';b.textContent=l;b.onclick=()=>{$('cats').querySelectorAll('button').forEach(x=>x.classList.remove('on'));b.classList.add('on');loadPapers(v)};$('cats').appendChild(b)});
+
+// Search
+$('go').onclick=doSearch;
+$('q').onkeydown=e=>{if(e.key==='Enter')doSearch()};
+$('sort').onchange=()=>render(sortList(P));
+document.addEventListener('keydown',e=>{if((e.metaKey||e.ctrlKey)&&e.key==='k'){e.preventDefault();$('q').focus()}});
+$('ov').onclick=e=>{if(e.target.id==='ov')e.target.classList.remove('show')};
+
+function switchTab(k){
+  $('cats').style.display=k==='papers'?'flex':'none';
+  $('stats').style.display='none';
+  if(k==='papers')loadPapers();
+  else if(k==='bookmarks')loadBookmarks();
+  else if(k==='recommend')loadRecommend();
+  else if(k==='mypaper')showMyPaper();
+  else if(k==='streak')showStreak();
+}
+
+function md2html(t){
+  if(!t)return '';
+  // Process markdown headings and formatting
+  var r=t;
+  // #### headings
+  r=r.replace(/####\s+([^\n]+)/g, function(m,p1){return '<div style="color:#a5b4fc;font-size:13px;margin:16px 0 8px;font-weight:700;border-bottom:1px solid #1e293b;padding-bottom:6px">'+p1+'</div>'});
+  // ### headings
+  r=r.replace(/###\s+([^\n]+)/g, function(m,p1){return '<div style="color:#f97316;font-size:14px;margin:18px 0 10px;font-weight:700;border-bottom:1px solid #1e293b;padding-bottom:6px">'+p1+'</div>'});
+  // ## headings
+  r=r.replace(/##\s+([^\n]+)/g, function(m,p1){return '<div style="color:#f97316;font-size:15px;margin:16px 0 8px;font-weight:700">'+p1+'</div>'});
+  // bold
+  r=r.replace(/\*\*([^*]+)\*\*/g, '<b>$1</b>');
+  // double newline = paragraph break
+  r=r.replace(/\n\n/g, '<div style="margin:12px 0"></div>');
+  // single newline = line break
+  r=r.replace(/\n/g, '<br>');
+  return r;
+}
+
+function sortList(list){
+  const s=$('sort').value;
+  if(s==='citations')return[...list].sort((a,b)=>(b.citationCount||0)-(a.citationCount||0));
+  if(s==='date')return[...list].sort((a,b)=>(b.publishedDate||'').localeCompare(a.publishedDate||''));
+  return list;
+}
+
+function badge(s){const m={pubmed:['#22c55e','PubMed'],arxiv:['#ef4444','arXiv'],openalex:['#8b5cf6','OpenAlex']};const[c,l]=m[s]||['#f97316',s||'DB'];return '<span class="badge" style="background:'+c+'15;color:'+c+'">'+l+'</span>'}
+
+async function loadPapers(cat){
+  $('out').innerHTML='<div class="loading">논문 로딩 중</div>';
+  const d=await GET('/papers'+(cat?'?category='+encodeURIComponent(cat):''));
+  if(d&&d.papers){P=d.papers;render(sortList(P))}
+  else $('out').innerHTML='<div class="empty">논문을 불러올 수 없습니다</div>';
+}
+
+async function doSearch(){
+  const q=$('q').value.trim();if(!q){loadPapers();return}
+  $('out').innerHTML='<div class="loading">"'+q+'" 검색 중</div>';
+  const d=await GET('/search?q='+encodeURIComponent(q)+'&source='+$('src').value+'&limit=20');
+  if(d&&d.papers&&d.papers.length){P=d.papers;render(sortList(P))}
+  else $('out').innerHTML='<div class="empty">검색 결과가 없습니다</div>';
+}
+
+function render(list){
+  const el=$('out');el.className='grid';
+  if(!list.length){el.innerHTML='<div class="empty">논문이 없습니다</div>';return}
+  el.innerHTML=list.map(function(p,i){
+    return '<div class="card" data-i="'+i+'">'
+      +badge(p.source)
+      +'<span class="badge" style="background:#f9731615;color:var(--accent)">'+(p.category||'General')+'</span>'
+      +(p.citationCount?'<span class="badge" style="background:#f59e0b15;color:#f59e0b">📊 '+p.citationCount.toLocaleString()+'</span>':'')
+      +'<h3>'+(p.title||'Untitled')+'</h3>'
+      +'<div class="meta">'+(p.authors||[]).slice(0,3).join(', ')+(p.authors&&p.authors.length>3?' 외':'')
+      +' · '+(p.publishedDate||'')+'</div>'
+      +'<div class="abs">'+(p.abstract||'초록 없음')+'</div>'
+      +'<div class="sa"></div>'
+      +'<div class="acts">'
+      +'<button class="sb">🤖 요약</button>'
+      +'<select class="sl"><option value="ko">🇰🇷</option><option value="en">🇺🇸</option><option value="both">🌐</option></select>'
+      +'<button class="bb '+(BM.has(p.paperId)?'bm':'')+'">'+(BM.has(p.paperId)?'⭐':'☆')+'</button>'
+      +(p.doi?'<button onclick="window.open(\'https://doi.org/'+p.doi+'\')">📎</button>':'')
+      +'<button class="db">📋 상세</button>'
+      +'<button class="cb" title="비교할 논문 선택">⚖️</button>'
+      +'</div></div>';
+  }).join('');
+  // Bind events
+  el.querySelectorAll('.card').forEach(function(card,i){
+    card.querySelector('.sb').onclick=function(){doSum(i,this)};
+    card.querySelector('.bb').onclick=function(){doBM(P[i].paperId,this)};
+    card.querySelector('.db').onclick=function(){openDetail(i)};
+    card.querySelector('.cb').onclick=function(){selectCompare(i,this)};
+  });
+}
+</script>
+
+<script>
+// === Summary ===
+async function doSum(i,btn){
+  var p=P[i];if(!p)return;
+  var area=btn.closest('.card').querySelector('.sa');
+  var lang=btn.closest('.card').querySelector('.sl').value;
+  btn.textContent='⏳';btn.disabled=true;
+  if(lang==='both'||lang==='en'){
+    var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title||'',abstract:p.abstract||'',summaryType:'bilingual_summary'});
+    if(d){var h='';if(lang!=='ko')h+='<div class="sumbox" style="border-left-color:#3b82f6">🇺🇸 '+md2html(d.enSummary||'')+'</div>';if(lang==='both')h+='<div class="sumbox" style="border-left-color:#22c55e">🇰🇷 '+md2html(d.koSummary||'')+'</div>';area.innerHTML=h;recordRead()}
+  }else{
+    var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title||'',abstract:p.abstract||'',summaryType:'all'});
+    if(d){var h='';if(d.oneLineSummary)h+='<div class="sumbox">💡 '+d.oneLineSummary+'</div>';if(d.pageSummary)h+='<div class="pgbox"><div class="t">📖 전반적인 요약</div><div class="b">'+md2html(d.pageSummary)+'</div></div>';area.innerHTML=h;recordRead()}
+  }
+  btn.textContent='🤖 요약';btn.disabled=false;
+}
+
+// === Bookmark ===
+async function doBM(id,btn){
+  if(BM.has(id)){await fetch(API+'/bookmarks/'+id+'?userId=default-user',{method:'DELETE'});BM.delete(id);btn.classList.remove('bm');btn.textContent='☆'}
+  else{await POST('/bookmarks',{paperId:id,userId:'default-user'});BM.add(id);btn.classList.add('bm');btn.textContent='⭐'}
+}
+
+// === Detail Modal ===
+function openDetail(i){
+  var p=P[i];if(!p)return;
+  var md=$('md');
+  md.innerHTML='<button class="x" onclick="$(\'ov\').classList.remove(\'show\')">&times;</button>'
+    +'<h2>'+p.title+'</h2>'
+    +'<p>'+badge(p.source)+' '+(p.category||'')+' · '+(p.publishedDate||'')+(p.citationCount?' · 📊 '+p.citationCount.toLocaleString():'')+'</p>'
+    +'<p><b>저자:</b> '+(p.authors||[]).join(', ')+'</p>'
+    +(p.doi?'<p><b>DOI:</b> <a href="https://doi.org/'+p.doi+'" style="color:var(--accent)" target="_blank">'+p.doi+'</a></p>':'')
+    +'<hr>'
+    +'<p style="font-size:13px;line-height:1.8">'+(p.abstract||'초록 없음')+'</p>'
+    +'<div class="mtabs">'
+    +'<div class="mt on" data-t="summary">📋 요약</div>'
+    +'<div class="mt" data-t="analysis">📈 분석</div>'
+    +'<div class="mt" data-t="english">📖 영어학습</div>'
+    +'<div class="mt" data-t="tutor">🤖 튜터</div>'
+    +'<div class="mt" data-t="questions">❓ 연구질문</div>'
+    +'<div class="mt" data-t="slides">📊 슬라이드</div>'
+    +'</div>'
+    +'<div id="mContent"></div>';
+  // Tab switching
+  md.querySelectorAll('.mt').forEach(function(tab){
+    tab.onclick=function(){
+      md.querySelectorAll('.mt').forEach(function(x){x.classList.remove('on')});
+      tab.classList.add('on');
+      loadModalTab(tab.dataset.t,p);
+    };
+  });
+  loadModalTab('summary',p);
+  $('ov').classList.add('show');
+}
+
+function loadModalTab(tab,p){
+  var mc=$('mContent');
+  if(tab==='summary'){
+    mc.innerHTML='<div style="margin-top:12px">'
+      +(p.oneLineSummary?'<div class="sumbox">💡 '+p.oneLineSummary+'</div>':'')
+      +(p.pageSummary?'<div class="pgbox"><div class="t">📖 전반적인 요약</div><div class="b">'+md2html(p.pageSummary)+'</div></div>':'')
+      +'<button class="mbtn" style="background:var(--accent2)" id="mSumBtn">🤖 AI 요약 생성</button>'
+      +' <select id="mSumLang" style="padding:5px;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:6px;font-size:11px"><option value="ko">🇰🇷 한국어</option><option value="en">🇺🇸 English</option><option value="both">🌐 둘 다</option></select>'
+      +'<div id="mSumResult"></div></div>';
+    $('mSumBtn').onclick=async function(){
+      this.textContent='⏳';this.disabled=true;
+      var lang=$('mSumLang').value;
+      var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,summaryType:lang==='both'||lang==='en'?'bilingual_summary':'all'});
+      if(d){var h='';
+        if(d.enSummary)h+='<div class="sumbox" style="border-left-color:#3b82f6">🇺🇸 '+md2html(d.enSummary)+'</div>';
+        if(d.koSummary&&lang!=='en')h+='<div class="sumbox" style="border-left-color:#22c55e">🇰🇷 '+md2html(d.koSummary)+'</div>';
+        if(d.oneLineSummary)h+='<div class="sumbox">💡 '+d.oneLineSummary+'</div>';
+        if(d.pageSummary)h+='<div class="pgbox"><div class="t">📖 전반적인 요약</div><div class="b">'+md2html(d.pageSummary)+'</div></div>';
+        if(d.keywords&&d.keywords.length)h+='<div style="margin-top:8px">🏷️ '+d.keywords.map(function(k){return '<span class="badge" style="background:var(--accent2)15;color:var(--accent2);cursor:pointer" onclick="$(\'q\').value=\''+k+'\';$(\'ov\').classList.remove(\'show\');doSearch()">'+k+'</span>'}).join(' ')+'</div>';
+        if(d.difficulty)h+='<div style="margin-top:6px;font-size:11px">📊 난이도: <b style="color:'+(d.difficulty.level==='입문'?'#22c55e':d.difficulty.level==='고급'?'#ef4444':'#f59e0b')+'">'+d.difficulty.level+'</b> '+d.difficulty.reason+'</div>';
+        $('mSumResult').innerHTML=h;recordRead();
+      }
+      this.textContent='🤖 AI 요약 생성';this.disabled=false;
+    };
+  }else if(tab==='analysis'){
+    mc.innerHTML='<div style="margin-top:12px"><button class="mbtn" style="background:#22c55e" id="mCiteBtn">📚 인용 논문</button> <button class="mbtn" style="background:#f59e0b" id="mTrendBtn">📈 트렌드</button><div id="mAnalResult"></div></div>';
+    $('mCiteBtn').onclick=async function(){
+      this.textContent='⏳';this.disabled=true;
+      var d=await GET('/citations?'+(p.doi?'doi='+encodeURIComponent(p.doi):'title='+encodeURIComponent(p.title)));
+      if(d&&d.citations&&d.citations.length){$('mAnalResult').innerHTML='<h4 style="color:#22c55e;font-size:13px;margin:12px 0 8px">📚 인용 논문 ('+d.count+'편)</h4>'+d.citations.map(function(c){return '<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px;border:1px solid var(--border)"><div style="font-size:12px;color:#f8fafc">'+c.title+'</div><div style="font-size:10px;color:var(--muted)">'+(c.authors||[]).slice(0,3).join(', ')+' · '+c.year+'</div></div>'}).join('')}
+      else $('mAnalResult').innerHTML='<div style="color:var(--muted);margin-top:10px;font-size:11px">인용 논문 없음</div>';
+      this.textContent='📚 인용 논문';this.disabled=false;
+    };
+    $('mTrendBtn').onclick=async function(){
+      this.textContent='⏳';this.disabled=true;
+      var kw=(p.title||'').split(' ').slice(0,3).join(' ');
+      var d=await GET('/trends?q='+encodeURIComponent(kw));
+      if(d&&d.trends&&d.trends.length){var mx=Math.max.apply(null,d.trends.map(function(t){return t.count}));$('mAnalResult').innerHTML='<h4 style="color:#f59e0b;font-size:13px;margin:12px 0 8px">📈 "'+d.query+'" 트렌드</h4><div style="display:flex;align-items:flex-end;gap:2px;height:100px">'+d.trends.map(function(t){var h=Math.max(4,t.count/mx*80);return '<div style="flex:1;text-align:center" title="'+t.year+': '+t.count+'"><div style="height:'+h+'px;background:linear-gradient(180deg,#f59e0b,#d97706);border-radius:2px 2px 0 0;margin:0 auto;width:80%"></div><div style="font-size:7px;color:var(--muted)">'+String(t.year).slice(2)+'</div></div>'}).join('')+'</div>'}
+      else $('mAnalResult').innerHTML='<div style="color:var(--muted);margin-top:10px;font-size:11px">트렌드 없음</div>';
+      this.textContent='📈 트렌드';this.disabled=false;
+    };
+  }else if(tab==='tutor'){
+    var history=[];
+    mc.innerHTML='<div style="margin-top:12px"><div style="font-size:12px;color:var(--muted);margin-bottom:10px">🤖 이 논문에 대해 무엇이든 물어보세요</div><div id="chatLog" style="max-height:250px;overflow-y:auto;margin-bottom:10px"></div><div style="display:flex;gap:6px"><input id="chatQ" placeholder="질문 입력..." style="flex:1;padding:8px 12px;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;font-size:12px;outline:none"><button class="mbtn" style="background:var(--accent2)" id="chatSend">전송</button></div></div>';
+    var sendChat=async function(){
+      var q=$('chatQ').value.trim();if(!q)return;$('chatQ').value='';
+      $('chatLog').innerHTML+='<div style="background:var(--accent)10;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px"><b style="color:var(--accent)">나:</b> '+q+'</div>';
+      $('chatSend').disabled=true;$('chatSend').textContent='⏳';
+      var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,question:q,history:history,summaryType:'chat'});
+      if(d&&d.answer){history.push({q:q,a:d.answer});$('chatLog').innerHTML+='<div style="background:var(--accent2)10;border-radius:8px;padding:8px;margin-bottom:6px;font-size:12px;line-height:1.6"><b style="color:var(--accent2)">AI:</b> '+d.answer+'</div>'}
+      $('chatSend').disabled=false;$('chatSend').textContent='전송';$('chatLog').scrollTop=$('chatLog').scrollHeight;
+    };
+    $('chatSend').onclick=sendChat;$('chatQ').onkeydown=function(e){if(e.key==='Enter')sendChat()};
+  }else if(tab==='questions'){
+    mc.innerHTML='<div class="loading" style="margin-top:12px">연구 질문 생성 중</div>';
+    POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,summaryType:'research_questions'}).then(function(d){
+      if(d&&d.questions&&d.questions.length){var colors={비판:'#ef4444',확장:'#3b82f6',방법론:'#f59e0b',응용:'#22c55e',한계:'#a855f7'};mc.innerHTML='<div style="margin-top:12px">'+d.questions.map(function(q,i){var c=colors[q.type]||'var(--accent)';return '<div style="background:var(--bg);border-radius:10px;padding:12px;margin-bottom:8px;border-left:3px solid '+c+'"><div style="font-size:13px;color:#f8fafc;font-weight:600">Q'+(i+1)+'. '+q.question+' <span class="badge" style="background:'+c+'15;color:'+c+'">'+q.type+'</span></div><div style="font-size:11px;color:#a5b4fc;margin-top:4px">💡 '+q.hint+'</div></div>'}).join('')+'</div>'}
+      else mc.innerHTML='<div class="empty">질문 생성 실패</div>';
+    });
+  }else if(tab==='slides'){
+    mc.innerHTML='<div class="loading" style="margin-top:12px">슬라이드 생성 중</div>';
+    POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,summaryType:'slides'}).then(function(d){
+      if(d&&d.slides&&d.slides.length){window._slides=d.slides;mc.innerHTML='<div style="margin-top:12px"><button class="mbtn" style="background:var(--accent)" onclick="dlSlides()">📄 HTML 다운로드</button> <button class="mbtn" style="background:#22c55e" onclick="dlSlidesTxt()">📊 텍스트</button><div style="margin-top:12px">'+d.slides.map(function(s,i){return '<div style="background:var(--bg);border-radius:10px;padding:14px;margin-bottom:8px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--muted)">슬라이드 '+(i+1)+'</div><div style="font-size:15px;font-weight:700;color:#f8fafc;margin:6px 0">'+s.title+'</div><ul style="padding-left:18px;font-size:12px;color:#cbd5e1">'+(s.bullets||[]).map(function(b){return '<li style="margin-bottom:3px">'+b+'</li>'}).join('')+'</ul><div style="font-size:10px;color:var(--muted);margin-top:6px">📝 '+s.notes+'</div></div>'}).join('')+'</div></div>'}
+      else mc.innerHTML='<div class="empty">슬라이드 생성 실패</div>';
+    });
+  }else if(tab==='english'){
+    mc.innerHTML='<div style="margin-top:12px">'
+      +'<div style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:12px">'
+      +'<button class="mbtn ebtn" style="background:var(--accent2);font-size:10px;padding:5px 10px" data-e="vocab">🔤 단어장</button>'
+      +'<button class="mbtn ebtn" style="background:#334155;font-size:10px;padding:5px 10px" data-e="sentence">📝 문장해부</button>'
+      +'<button class="mbtn ebtn" style="background:#334155;font-size:10px;padding:5px 10px" data-e="writing">✍️ 영작</button>'
+      +'<button class="mbtn ebtn" style="background:#334155;font-size:10px;padding:5px 10px" data-e="quiz">📝 퀴즈</button>'
+      +'<button class="mbtn ebtn" style="background:#334155;font-size:10px;padding:5px 10px" data-e="patterns">📚 학술표현</button>'
+      +'<button class="mbtn ebtn" style="background:#334155;font-size:10px;padding:5px 10px" data-e="tts">🔊 TTS</button>'
+      +'<button class="mbtn ebtn" style="background:#334155;font-size:10px;padding:5px 10px" data-e="discussion">🎤 발표</button>'
+      +'<button class="mbtn ebtn" style="background:#334155;font-size:10px;padding:5px 10px" data-e="progress">📈 통계</button>'
+      +'</div>'
+      +'<div style="display:flex;gap:6px;margin-bottom:10px"><button onclick="exportMD()" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:9px">📥 MD</button><button onclick="exportCSV()" style="padding:4px 8px;border-radius:5px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;font-size:9px">📊 CSV</button></div>'
+      +'<div id="engC"><div style="color:var(--muted);text-align:center;padding:16px;font-size:12px">위 버튼을 눌러 학습을 시작하세요</div></div></div>';
+    mc.querySelectorAll('.ebtn').forEach(function(b){
+      b.onclick=function(){mc.querySelectorAll('.ebtn').forEach(function(x){x.style.background='#334155'});b.style.background='var(--accent2)';loadEngTab(b.dataset.e,p)};
+    });
+  }
+}
+</script>
+
+<script>
+// === English Learning Sub-tabs ===
+async function loadEngTab(t,p){
+  var ec=$('engC');
+  if(t==='vocab'){
+    ec.innerHTML='<div class="loading">단어 추출 중</div>';
+    var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,summaryType:'vocab'});
+    if(d&&d.vocab&&d.vocab.length){saveToReview(d.vocab);ec.innerHTML=d.vocab.map(function(v,i){return '<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px;border:1px solid var(--border)"><span style="color:var(--accent);font-weight:700">'+(i+1)+'.</span> <b style="font-size:14px;color:#f8fafc">'+v.word+'</b> <span style="font-size:10px;color:var(--muted)">'+( v.pronunciation||'')+'</span><div style="font-size:12px;color:#a5b4fc;margin:4px 0">'+v.meaning+'</div><div style="font-size:10px;color:#94a3b8;font-style:italic">"'+(v.example||'')+'"</div></div>'}).join('')}
+    else ec.innerHTML='<div style="color:#ef4444">실패</div>';
+  }else if(t==='sentence'){
+    ec.innerHTML='<div class="loading">문장 분석 중</div>';
+    var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,summaryType:'sentences'});
+    if(d&&d.sentences&&d.sentences.length){ec.innerHTML=d.sentences.map(function(s,i){return '<div style="background:var(--bg);border-radius:8px;padding:12px;margin-bottom:8px;border:1px solid var(--border)"><div style="font-size:12px;color:#f8fafc;line-height:1.6;margin-bottom:6px">'+s.sentence+'</div><div style="font-size:11px"><span style="color:var(--accent)">주어:</span> '+s.subject+' <span style="color:#22c55e">동사:</span> '+s.verb+' <span style="color:#3b82f6">목적어:</span> '+s.object+'</div><div style="font-size:11px;color:#a5b4fc;margin-top:4px">📝 직역: '+s.literal+'</div><div style="font-size:11px;color:#86efac">💡 의역: '+s.natural+'</div><div style="font-size:10px;color:var(--muted);margin-top:4px">'+s.explanation+'</div></div>'}).join('')}
+    else ec.innerHTML='<div style="color:#ef4444">실패</div>';
+  }else if(t==='writing'){
+    ec.innerHTML='<div style="font-size:12px;color:#a5b4fc;margin-bottom:8px">이 논문의 요약을 영어로 작성해보세요:</div><div style="background:var(--bg);border-radius:8px;padding:10px;font-size:11px;color:#cbd5e1;margin-bottom:8px;border:1px solid var(--border)">'+(p.oneLineSummary||p.abstract||'').substring(0,200)+'</div><textarea id="userW" placeholder="영어로 작성..." style="width:100%;height:100px;padding:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;font-size:12px;resize:vertical;outline:none"></textarea><button class="mbtn" style="background:var(--accent2);margin-top:6px" id="checkW">✍️ AI 피드백</button><div id="wResult"></div>';
+    $('checkW').onclick=async function(){
+      var w=$('userW').value.trim();if(!w)return;this.textContent='⏳';this.disabled=true;
+      var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,userWriting:w,summaryType:'writing_check'});
+      if(d&&d.score!==undefined){
+        var h='<div style="margin-top:10px"><div style="font-size:28px;font-weight:800;color:'+(d.score>=80?'#22c55e':d.score>=50?'#f59e0b':'#ef4444')+'">'+d.score+'/100</div>';
+        h+='<div class="pgbox" style="margin-top:8px"><div class="b" style="font-size:13px">'+(d.feedback||'')+'</div></div>';
+        if(d.model_answer)h+='<div style="background:#22c55e08;border-radius:8px;padding:12px;margin:10px 0;border:1px solid #22c55e30"><div style="font-size:12px;color:#22c55e;font-weight:700;margin-bottom:6px">📝 모범 답안</div><div style="font-size:13px;color:#f8fafc;line-height:1.7">'+d.model_answer+'</div></div>';
+        if(d.corrections&&d.corrections.length)h+='<h4 style="color:var(--accent);font-size:13px;margin:10px 0 6px">✏️ 교정</h4>'+d.corrections.map(function(c){return '<div style="background:var(--bg);border-radius:6px;padding:10px;margin-bottom:4px;border:1px solid var(--border)"><div style="font-size:13px"><span style="color:#ef4444;text-decoration:line-through">'+c.original+'</span> → <span style="color:#22c55e;font-weight:600">'+c.corrected+'</span></div><div style="font-size:11px;color:var(--muted);margin-top:2px">'+c.reason+'</div></div>'}).join('');
+        if(d.grammar_fixes&&d.grammar_fixes.length)h+='<h4 style="color:#3b82f6;font-size:13px;margin:10px 0 6px">📝 문법</h4>'+d.grammar_fixes.map(function(g){return '<div style="background:var(--bg);border-radius:6px;padding:10px;margin-bottom:4px;border:1px solid #3b82f630"><div style="font-size:13px">❌ <span style="color:#ef4444">'+g.wrong+'</span> → ✅ <span style="color:#22c55e">'+g.correct+'</span></div><div style="font-size:11px;color:#60a5fa;margin-top:2px">📖 '+g.rule+'</div></div>'}).join('');
+        h+='</div>';$('wResult').innerHTML=h;
+      }
+      this.textContent='✍️ AI 피드백';this.disabled=false;
+    };
+  }else if(t==='quiz'){
+    ec.innerHTML='<div class="loading">퀴즈 생성 중</div>';
+    var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,summaryType:'quiz'});
+    if(d&&d.quiz&&d.quiz.length){
+      var qi=0,sc=0;
+      window._showQuiz=function(){
+        if(qi>=d.quiz.length){ec.innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:36px">'+(sc>=4?'🎉':'📚')+'</div><div style="font-size:24px;font-weight:800;color:'+(sc>=4?'#22c55e':'#f59e0b')+'">'+sc+'/'+d.quiz.length+'</div></div>';return}
+        var q=d.quiz[qi];ec.innerHTML='<div style="font-size:10px;color:var(--muted);margin-bottom:6px">Q'+(qi+1)+'/'+d.quiz.length+'</div><div style="font-size:14px;color:#f8fafc;margin-bottom:10px">'+q.question+'</div>'+(q.options||[]).map(function(o,j){var letter=String.fromCharCode(65+j);return '<button class="qo" data-a="'+letter+'" style="display:block;width:100%;text-align:left;padding:10px;margin-bottom:4px;border-radius:8px;border:1px solid var(--border);background:var(--bg);color:#cbd5e1;cursor:pointer;font-size:12px">'+letter+'. '+o+'</button>'}).join('')+'<div id="qExp"></div>';
+        ec.querySelectorAll('.qo').forEach(function(btn){btn.onclick=function(){
+          var a=btn.dataset.a;var ok=a===q.answer;if(ok)sc++;
+          ec.querySelectorAll('.qo').forEach(function(b){b.disabled=true;if(b.dataset.a===q.answer)b.style.background='#22c55e20';if(b.dataset.a===a&&!ok)b.style.background='#ef444420'});
+          $('qExp').innerHTML='<div style="margin-top:8px;padding:10px;border-radius:8px;background:'+(ok?'#22c55e':'#ef4444')+'10"><div style="color:'+(ok?'#22c55e':'#ef4444')+';font-weight:600">'+(ok?'✅ 정답':'❌ 오답 ('+q.answer+')')+'</div><div style="font-size:11px;color:#cbd5e1;margin-top:4px">'+q.explanation+'</div></div><button onclick="qi++;window._showQuiz()" style="margin-top:8px;padding:6px 12px;border-radius:6px;border:none;background:var(--accent);color:#fff;cursor:pointer;font-size:11px">'+(qi<d.quiz.length-1?'다음 →':'결과')+'</button>';
+          window.qi=qi;
+        }});
+      };window.qi=qi;window._showQuiz();
+    }else ec.innerHTML='<div style="color:#ef4444">퀴즈 생성 실패</div>';
+  }else if(t==='patterns'){
+    ec.innerHTML='<div style="display:flex;gap:4px;margin-bottom:8px"><button class="pbtn" data-s="Introduction" style="padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:var(--accent2);color:#fff;cursor:pointer;font-size:10px">서론</button><button class="pbtn" data-s="Methods" style="padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:#94a3b8;cursor:pointer;font-size:10px">방법론</button><button class="pbtn" data-s="Results" style="padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:#94a3b8;cursor:pointer;font-size:10px">결과</button><button class="pbtn" data-s="Conclusion" style="padding:4px 8px;border-radius:8px;border:1px solid var(--border);background:transparent;color:#94a3b8;cursor:pointer;font-size:10px">결론</button></div><div id="patList"><div class="loading">로딩 중</div></div>';
+    var loadPat=async function(sec){
+      $('patList').innerHTML='<div class="loading">로딩 중</div>';
+      var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,section:sec,summaryType:'patterns'});
+      if(d&&d.patterns&&d.patterns.length){$('patList').innerHTML=d.patterns.map(function(pt){return '<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px;border:1px solid var(--border)"><div style="font-size:12px;font-weight:600;color:#f8fafc">'+pt.pattern+'</div><div style="font-size:11px;color:#a5b4fc;margin:3px 0">'+pt.meaning+'</div><div style="font-size:10px;color:#94a3b8;font-style:italic">"'+pt.example+'"</div></div>'}).join('')}
+      else $('patList').innerHTML='<div style="color:#ef4444;font-size:11px">실패</div>';
+    };
+    ec.querySelectorAll('.pbtn').forEach(function(b){b.onclick=function(){ec.querySelectorAll('.pbtn').forEach(function(x){x.style.background='transparent';x.style.color='#94a3b8'});b.style.background='var(--accent2)';b.style.color='#fff';loadPat(b.dataset.s)}});
+    loadPat('Introduction');
+  }else if(t==='tts'){
+    var text=p.abstract||p.title||'';
+    ec.innerHTML='<div style="background:var(--bg);border-radius:8px;padding:12px;font-size:12px;color:#f8fafc;line-height:1.6;margin-bottom:10px;border:1px solid var(--border)">'+text+'</div><div style="display:flex;gap:6px;flex-wrap:wrap"><button id="tPlay" class="mbtn" style="background:var(--accent)">▶️ 재생</button><button id="tPause" class="mbtn" style="background:#334155">⏸</button><button id="tStop" class="mbtn" style="background:#ef4444">⏹</button><select id="tRate" style="padding:5px;border:1px solid var(--border);background:var(--card);color:var(--text);border-radius:6px;font-size:10px"><option value="0.5">0.5x</option><option value="0.75">0.75x</option><option value="1" selected>1x</option><option value="1.25">1.25x</option><option value="1.5">1.5x</option></select></div><div style="font-size:10px;color:var(--muted);margin-top:8px">💡 속도 조절하며 쉐도잉 연습</div>';
+    $('tPlay').onclick=function(){speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(text);u.rate=parseFloat($('tRate').value);u.lang='en-US';speechSynthesis.speak(u)};
+    $('tPause').onclick=function(){speechSynthesis.pause()};
+    $('tStop').onclick=function(){speechSynthesis.cancel()};
+  }else if(t==='discussion'){
+    ec.innerHTML='<div class="loading">발표 자료 생성 중</div>';
+    var d=await POST('/papers/'+encodeURIComponent(p.paperId)+'/summarize',{title:p.title,abstract:p.abstract,summaryType:'discussion'});
+    if(d){var h='';if(d.presentation_script)h+='<div class="pgbox"><div class="t">🎤 발표 스크립트</div><div class="b" style="font-size:13px">'+d.presentation_script+'</div></div>';if(d.expected_questions&&d.expected_questions.length)h+='<h4 style="color:var(--accent);font-size:12px;margin:10px 0 6px">❓ 예상 질문</h4>'+d.expected_questions.map(function(q){return '<div style="background:var(--bg);border-radius:8px;padding:10px;margin-bottom:6px;border:1px solid var(--border)"><div style="font-size:12px;color:#f8fafc">Q: '+q.question+'</div><div style="font-size:11px;color:#86efac;margin-top:4px">A: '+q.answer_guide+'</div></div>'}).join('');ec.innerHTML=h||'<div style="color:#ef4444">실패</div>'}
+    else ec.innerHTML='<div style="color:#ef4444">실패</div>';
+  }else if(t==='progress'){
+    var saved=JSON.parse(localStorage.getItem('ph_review')||'[]');
+    var streak=JSON.parse(localStorage.getItem('ph_streak')||'{"days":[],"total":0}');
+    var total=saved.length,mastered=saved.filter(function(s){return s.level>=3}).length;
+    var due=saved.filter(function(s){return s.nextReview<=Date.now()}).length;
+    ec.innerHTML='<div style="text-align:center;margin-bottom:16px"><div style="font-size:32px;font-weight:800;color:var(--accent)">'+total+'</div><div style="font-size:10px;color:var(--muted)">총 학습 단어</div></div><div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px"><div class="st"><div class="n" style="color:#22c55e">'+mastered+'</div><div class="l">마스터</div></div><div class="st"><div class="n" style="color:#ef4444">'+due+'</div><div class="l">오늘 복습</div></div></div><div style="background:var(--border);border-radius:6px;height:10px;overflow:hidden;margin-bottom:8px"><div style="height:100%;width:'+(total?Math.round(mastered/total*100):0)+'%;background:#22c55e;border-radius:6px"></div></div><div style="font-size:10px;color:var(--muted)">'+(total?Math.round(mastered/total*100):0)+'% 마스터 · 📚 '+streak.total+'편 읽음 · 복습: 1→4→7→14→28일</div>'+(due>0?'<button class="mbtn" style="background:var(--accent2);width:100%;margin-top:10px" onclick="showReview()">🧠 복습 시작 ('+due+')</button>':'');
+  }
+}
+
+// === Helpers ===
+var REVIEW_INTERVALS=[1,4,7,14,28];
+function saveToReview(vocab){var s=JSON.parse(localStorage.getItem('ph_review')||'[]');var now=Date.now();vocab.forEach(function(v){if(!s.find(function(x){return x.word===v.word}))s.push({word:v.word,meaning:v.meaning,pronunciation:v.pronunciation||'',example:v.example||'',addedAt:now,nextReview:now+86400000,level:0})});localStorage.setItem('ph_review',JSON.stringify(s))}
+function recordRead(){var s=JSON.parse(localStorage.getItem('ph_streak')||'{"days":[],"total":0}');s.days.push(new Date().toISOString().slice(0,10));s.total++;localStorage.setItem('ph_streak',JSON.stringify(s))}
+function getReviewDue(){var s=JSON.parse(localStorage.getItem('ph_review')||'[]');return s.filter(function(x){return x.nextReview<=Date.now()}).length}
+function showReview(){var saved=JSON.parse(localStorage.getItem('ph_review')||'[]');var due=saved.filter(function(s){return s.nextReview<=Date.now()});if(!due.length){alert('복습할 단어 없음');return}var i=0;var el=$('engC')||$('out');var show=function(){if(i>=due.length){el.innerHTML='<div style="text-align:center;padding:20px;color:#22c55e;font-size:16px">🎉 복습 완료!</div>';return}var w=due[i];el.innerHTML='<div style="text-align:center;padding:20px"><div style="font-size:10px;color:var(--muted)">'+(i+1)+'/'+due.length+'</div><div style="font-size:24px;font-weight:800;color:#f8fafc;margin:12px 0">'+w.word+'</div><button class="mbtn" style="background:var(--accent2)" onclick="document.getElementById(\'revA\').style.display=\'block\'">뜻 보기</button><div id="revA" style="display:none;margin-top:12px"><div style="font-size:14px;color:#a5b4fc">'+w.meaning+'</div><div style="display:flex;gap:8px;justify-content:center;margin-top:12px"><button class="mbtn" style="background:#ef4444" onclick="reviewAns('+i+',false)">❌</button><button class="mbtn" style="background:#22c55e" onclick="reviewAns('+i+',true)">✅</button></div></div></div>'};window.reviewAns=function(idx,ok){var all=JSON.parse(localStorage.getItem('ph_review')||'[]');var w=all.find(function(x){return x.word===due[idx].word});if(w){if(ok){w.level=Math.min(w.level+1,REVIEW_INTERVALS.length-1);w.nextReview=Date.now()+REVIEW_INTERVALS[w.level]*86400000}else{w.level=0;w.nextReview=Date.now()+86400000}localStorage.setItem('ph_review',JSON.stringify(all))}i++;show()};show()}
+function exportMD(){var s=JSON.parse(localStorage.getItem('ph_review')||'[]');if(!s.length){alert('단어 없음');return}var md='# PaperHub 단어장\n\n| # | 단어 | 뜻 | 발음 | 예문 | 레벨 |\n|---|------|-----|------|------|------|\n';s.forEach(function(v,i){md+='| '+(i+1)+' | '+v.word+' | '+v.meaning+' | '+(v.pronunciation||'')+' | '+(v.example||'').replace(/\|/g,',')+' | '+v.level+' |\n'});var b=new Blob([md],{type:'text/markdown'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='paperhub_vocab.md';a.click()}
+function exportCSV(){var s=JSON.parse(localStorage.getItem('ph_review')||'[]');if(!s.length){alert('단어 없음');return}var csv='\uFEFF번호,단어,뜻,발음,예문,레벨,다음복습,TTS반복,TTS텍스트\n';s.forEach(function(v,i){var d=new Date(v.addedAt);csv+='"'+(i+1)+'","'+v.word+'","'+v.meaning+'","'+(v.pronunciation||'')+'","'+(v.example||'').replace(/"/g,'""')+'","'+v.level+'","'+new Date(v.nextReview).toLocaleDateString()+'","4","'+v.word+' '+v.word+' '+v.word+' '+v.word+'"\n'});var b=new Blob([csv],{type:'text/csv;charset=utf-8'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='paperhub_vocab.csv';a.click()}
+function dlSlides(){var s=window._slides;if(!s)return;var h='<!DOCTYPE html><html><head><meta charset="UTF-8"><style>body{font-family:sans-serif;background:#0f172a;color:#e2e8f0;padding:40px}.s{background:#1e293b;border-radius:16px;padding:40px;margin-bottom:30px;min-height:300px;border:1px solid #334155}h1{color:#f97316;font-size:24px}ul{font-size:16px;line-height:2}.n{color:#64748b;font-size:12px}</style></head><body>';s.forEach(function(sl,i){h+='<div class="s"><div class="n">Slide '+(i+1)+'</div><h1>'+sl.title+'</h1><ul>'+(sl.bullets||[]).map(function(b){return '<li>'+b+'</li>'}).join('')+'</ul><div class="n">📝 '+sl.notes+'</div></div>'});h+='</body></html>';var b=new Blob([h],{type:'text/html'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='slides.html';a.click()}
+function dlSlidesTxt(){var s=window._slides;if(!s)return;var t='';s.forEach(function(sl,i){t+='--- Slide '+(i+1)+' ---\n'+sl.title+'\n\n'+(sl.bullets||[]).map(function(b){return '• '+b}).join('\n')+'\n\nNotes: '+sl.notes+'\n\n'});var b=new Blob([t],{type:'text/plain'});var a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='slides.txt';a.click()}
+
+// === Compare ===
+var compareSlot=null;
+function selectCompare(i,btn){
+  var p=P[i];if(!p)return;
+  if(!compareSlot){compareSlot=p;btn.style.background='var(--accent2)';btn.style.color='#fff';btn.textContent='⚖️✓';document.querySelectorAll('.cb').forEach(function(b){if(b!==btn)b.textContent='⚖️ 비교'})}
+  else if(compareSlot.paperId===p.paperId){compareSlot=null;btn.textContent='⚖️';btn.style.background='';document.querySelectorAll('.cb').forEach(function(b){b.textContent='⚖️'})}
+  else{var p1=compareSlot;compareSlot=null;document.querySelectorAll('.cb').forEach(function(b){b.textContent='⚖️';b.style.background='';b.style.color=''});doCompare(p1,p)}
+}
+async function doCompare(p1,p2){
+  $('md').innerHTML='<button class="x" onclick="$(\'ov\').classList.remove(\'show\')">&times;</button><h2>⚖️ 논문 비교</h2><div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0"><div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--accent)">논문 A</div><div style="font-size:12px;color:#f8fafc;font-weight:500">'+p1.title+'</div></div><div style="background:var(--bg);border-radius:8px;padding:10px;border:1px solid var(--border)"><div style="font-size:10px;color:var(--accent2)">논문 B</div><div style="font-size:12px;color:#f8fafc;font-weight:500">'+p2.title+'</div></div></div><div id="cmpResult"><div class="loading">AI가 비교 분석 중</div></div>';
+  $('ov').classList.add('show');
+  var d=await POST('/papers/compare/summarize',{title:p1.title,abstract:p1.abstract,title2:p2.title,abstract2:p2.abstract,summaryType:'compare'});
+  if(d&&d.comparison){$('cmpResult').innerHTML='<div class="pgbox"><div class="t">📊 AI 비교 분석</div><div class="b">'+md2html(d.comparison)+'</div></div>'}
+  else $('cmpResult').innerHTML='<div style="color:#ef4444">비교 실패</div>';
+}
+
+// === Other tabs ===
+async function loadBookmarks(){$('out').innerHTML='<div class="loading">북마크 로딩</div>';var d=await GET('/bookmarks?userId=default-user');if(d&&d.bookmarks&&d.bookmarks.length){var list=[];for(var i=0;i<d.bookmarks.length;i++){var p=await GET('/papers/'+d.bookmarks[i].paperId);if(p)list.push(p)}P=list;render(list)}else $('out').innerHTML='<div class="empty">⭐ 북마크 없음</div>'}
+async function loadRecommend(){$('out').innerHTML='<div class="loading">AI 추천 분석 중</div>';var d=await GET('/papers/recommend?userId=default-user');if(d&&d.recommendations&&d.recommendations.length){P=d.recommendations;render(P)}else $('out').innerHTML='<div class="empty">🤖 북마크 후 추천 가능</div>'}
+function showStreak(){$('out').className='';var s=JSON.parse(localStorage.getItem('ph_streak')||'{"days":[],"total":0}');var con=0;var ds=[...new Set(s.days)].sort().reverse();for(var i=0;i<ds.length;i++){if(ds[i]===new Date(Date.now()-i*86400000).toISOString().slice(0,10))con++;else break}$('out').innerHTML='<div style="max-width:500px;margin:0 auto;text-align:center;animation:fadeUp .4s"><div style="font-size:48px">🔥</div><div style="font-size:40px;font-weight:800;color:var(--accent)">'+con+'일</div><div style="color:var(--muted);font-size:13px">연속 읽기 스트릭</div><div style="display:flex;gap:10px;justify-content:center;margin-top:20px"><div class="st"><div class="n">'+s.total+'</div><div class="l">총 읽음</div></div><div class="st"><div class="n">'+con+'</div><div class="l">연속</div></div></div></div>'}
+function showMyPaper(){$('out').className='';$('out').innerHTML='<div style="max-width:600px;margin:0 auto;text-align:center;padding:40px"><div style="font-size:36px;margin-bottom:8px">📄</div><div style="font-size:16px;color:#f8fafc;margin-bottom:8px">내 논문 분석</div><div style="color:var(--muted);font-size:12px;margin-bottom:16px">PDF 업로드 또는 DOI 입력</div><input id="doiIn" placeholder="DOI 입력 (예: 10.1038/...)" style="width:100%;padding:10px;border:1px solid var(--border);background:var(--bg);color:var(--text);border-radius:8px;font-size:12px;outline:none;margin-bottom:8px"><button class="mbtn" style="background:var(--accent2)" onclick="fetchDoi()">논문 가져오기</button><div id="myPaperResult" style="margin-top:16px"></div></div>'}
+async function fetchDoi(){var doi=$('doiIn').value.trim();if(!doi)return;var d=await GET('/search?q='+encodeURIComponent(doi)+'&source=openalex&limit=1');if(d&&d.papers&&d.papers.length){P=[d.papers[0]];render(P)}else $('myPaperResult').innerHTML='<div style="color:#ef4444;font-size:12px">논문을 찾을 수 없습니다</div>'}
+
+// Init
+loadPapers();
+</script>
+</body></html>
