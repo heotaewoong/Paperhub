@@ -157,7 +157,7 @@ def check_writing(original_abstract: str, user_writing: str) -> dict:
 
 사용자 작성: {user_writing}
 
-{{"score": 0-100점수, "feedback": "한국어 전체 피드백", "model_answer": "이 논문 초록의 모범 영어 요약 (3-4문장)", "corrections": [{{"original": "사용자가 쓴 부분", "corrected": "교정된 표현", "reason": "이유"}}], "grammar_fixes": [{{"wrong": "문법 틀린 부분", "correct": "올바른 표현", "rule": "문법 규칙 설명(한국어)"}}], "good_points": ["잘한 점들"], "academic_tips": ["학술 영어 팁들"]}}}"""
+{{"score": 0-100점수, "feedback": "한국어 전체 피드백", "model_answer": "이 논문 초록의 모범 영어 요약 (3-4문장)", "corrections": [{{"original": "사용자가 쓴 부분", "corrected": "교정된 표현", "reason": "이유"}}], "grammar_fixes": [{{"wrong": "문법 틀린 부분", "correct": "올바른 표현", "rule": "문법 규칙 설명(한국어)"}}], "good_points": ["잘한 점들"], "academic_tips": ["학술 영어 팁들"]}}}}"""
     text = invoke_bedrock(prompt, max_tokens=2000)
     try:
         start = text.find('{')

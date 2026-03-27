@@ -10,7 +10,12 @@
       "Bash(node create-pptx.js)",
       "Bash(python3 \"/Users/skku_mac08/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/255dbdf1-eb4a-4f40-868f-34d10972d972/a1cb23d5-b828-4169-ab24-90a1697cad4e/skills/pptx/scripts/office/soffice.py\" --headless --convert-to pdf \"/Users/skku_mac08/Library/CloudStorage/GoogleDrive-ihtwandy0528@gmail.com/내 드라이브/ aws_바이오헬스케어_성균관대학교/aws_say2_project/paperhub/PaperHub_발표자료.pptx\")",
       "Bash(python3 -m markitdown \"/Users/skku_mac08/Library/CloudStorage/GoogleDrive-ihtwandy0528@gmail.com/내 드라이브/ aws_바이오헬스케어_성균관대학교/aws_say2_project/paperhub/PaperHub_발표자료.pptx\")",
-      "Bash(pip3 install:*)"
+      "Bash(pip3 install:*)",
+      "Bash(node update-arch.js)",
+      "Bash(python3 -m markitdown \"/Users/skku_mac08/Library/CloudStorage/GoogleDrive-ihtwandy0528@gmail.com/내 드라이브/ aws_바이오헬스케어_성균관대학교/aws_say2_project/paperhub/PaperHub_AWS_아키텍처.pptx\")",
+      "Bash(python3 \"/Users/skku_mac08/Library/Application Support/Claude/local-agent-mode-sessions/skills-plugin/255dbdf1-eb4a-4f40-868f-34d10972d972/a1cb23d5-b828-4169-ab24-90a1697cad4e/skills/pptx/scripts/thumbnail.py\" \"/Users/skku_mac08/Library/CloudStorage/GoogleDrive-ihtwandy0528@gmail.com/내 드라이브/ aws_바이오헬스케어_성균관대학교/aws_say2_project/paperhub/PaperHub_발표자료.pptx\")",
+      "Bash(find /tmp/paperhub-pptx -type f -name *.js)",
+      "Bash(find /private/tmp/paperhub-pptx -type f -name *.js)"
     ]
   }
 }
