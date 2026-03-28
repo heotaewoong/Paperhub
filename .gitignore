@@ -9,3 +9,6 @@ cdk.out
 
 # AWS credentials
 set-aws-env.sh
+
+# Ignore large video files
+intro_video.mov
